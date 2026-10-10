@@ -2,9 +2,7 @@
 
 ## 这是什么
 
-[micrograd](https://github.com/karpathy/micrograd) 是 Andrej Karpathy 写的教学项目（MIT 许可证），
-用大约 150 行纯 Python 实现了自动求导和一个小神经网络库。
-读懂它，就读懂了 PyTorch 里 `loss.backward()` 背后的原理。
+[micrograd](https://github.com/karpathy/micrograd) 是 Andrej Karpathy 写的教学项目（MIT 许可证），用大约 150 行纯 Python 实现了自动求导和一个小神经网络库。读懂它，就读懂了 PyTorch 里 `loss.backward()` 背后的原理。
 
 本文件夹**不包含** micrograd 的源码，只包含我写的演示脚本。
 
@@ -15,8 +13,7 @@ git clone https://github.com/karpathy/micrograd
 python run_demo.py
 ```
 
-`run_demo.py` 复现了原作者笔记本里的实验：用一个 2→16→16→1 的多层感知机（337 个参数）
-把两个交错的"月牙"点集分开。
+`run_demo.py` 复现了原作者笔记本里的实验：用一个 2→16→16→1 的多层感知机（337 个参数）把两个交错的"月牙"点集分开。
 
 ## 实验结果
 
@@ -26,8 +23,7 @@ python run_demo.py
 
 背景颜色是网络学到的分界：落在浅橙色区域的点判为橙色类，浅绿色区域判为绿色类。
 
-另一个小实验：只写出机械能公式 E = ½mv² + mgh，调用 `E.backward()`，
-micrograd 自动算出 ∂E/∂m = 53.5、∂E/∂v = 6.0（动量 mv）、∂E/∂h = 19.6（重力 mg），和手算一致。
+另一个小实验：只写出机械能公式 E = ½mv² + mgh，调用 `E.backward()`，micrograd 自动算出 ∂E/∂m = 53.5、∂E/∂v = 6.0（动量 mv）、∂E/∂h = 19.6（重力 mg），和手算一致。
 
 ## 必读的代码（约 45 行）
 

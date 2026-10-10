@@ -10,11 +10,9 @@
 ## 怎么运行
 
 ```bash
-# 1. 下载《紅樓夢》原文（古腾堡计划公有领域版本，繁体，约 2.6 MB）
-curl -L -o hlm_raw.txt https://www.gutenberg.org/cache/epub/24264/pg24264.txt
+# 1. 下载《紅樓夢》原文（古腾堡计划公有领域版本，繁体，约 2.6 MB）curl -L -o hlm_raw.txt https://www.gutenberg.org/cache/epub/24264/pg24264.txt
 
-# 2. 预训练：CPU 上用 small 配置约 8 分钟；有 GPU 时自动用 medium 配置
-python nanogpt.py
+# 2. 预训练：CPU 上用 small 配置约 8 分钟；有 GPU 时自动用 medium 配置python nanogpt.py
 
 # 3. 监督微调演示：约 2 分钟，生成对比网页 sft_report.html
 python sft_demo.py
@@ -40,8 +38,7 @@ python sft_demo.py
 | 750 | 4.22 | 寶玉見寶釵笑道："你還要見，你活回來… |
 | 2000 | 3.85 | 寶玉坐下．尤氏笑道："你這會子怎么！快們要罷。" |
 
-学会了人名、对话格式和书中的腔调，但没学会意思。
-检查续写内容：连续 10 个字以上的片段在原书中都找不到，说明它是自己"编"的，不是背的。
+学会了人名、对话格式和书中的腔调，但没学会意思。检查续写内容：连续 10 个字以上的片段在原书中都找不到，说明它是自己"编"的，不是背的。
 
 ### 监督微调（在 30 道没见过的新题上考试）
 
