@@ -1,0 +1,27 @@
+# Python 环境和缓存
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# 数据集：体积大，按各项目 README 里的说明自行下载
+data/
+*.zip
+hlm_raw.txt
+
+# 训练出的模型权重：体积大，可以重新训练得到
+*.pt
+*.pth
+
+# 运行后自动生成的文件
+viz.html
+sft_report.html
+sft_result.json
+
+# 第三方仓库（按 README 说明自行克隆）
+02-micrograd-demo/micrograd/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini

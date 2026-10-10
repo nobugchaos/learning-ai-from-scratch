@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>神经网络内部可视化</title>
+<style>
+:root{--bg:#faf9f6;--card:#fff;--ink:#1d1d1b;--muted:#6b6a64;--line:#e4e2da;--accent:#185fa5;--good:#1b7f3a;--bad:#c0392b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--card:#20201e;--ink:#eeede8;--muted:#a3a29a;--line:#34342f;--accent:#5b9ee6;--good:#4cc070;--bad:#ec6a5e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:24px;font-weight:600;margin:0 0 4px}
+h2{font-size:19px;font-weight:600;margin:40px 0 4px}
+h3{font-size:15px;font-weight:600;margin:0}
+.sub{color:var(--muted);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:0 0 8px}
+.card p{margin:2px 0 12px;color:var(--muted);font-size:13.5px}
+.down{text-align:center;color:var(--muted);font-size:13px;margin:4px 0 8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 12px;cursor:pointer}
+button.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+canvas{image-rendering:pixelated;display:block}
+.grid{display:grid;gap:6px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted)}
+.bars{display:grid;grid-template-columns:20px 1fr 52px;gap:4px 8px;align-items:center;font-size:13px}
+.bar{height:14px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--muted)}
+.bar i.top{background:var(--accent)}
+.stat{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0 12px}
+.stat b{display:block;font-size:22px;font-weight:600}
+.stat span{font-size:12px;color:var(--muted)}
+input[type=range]{width:100%}
+.pred{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px}
+.pred .cell{border:1px solid var(--line);border-radius:8px;padding:6px}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+.mini{display:flex;gap:1px;align-items:flex-end;height:22px}
+.mini i{width:6px;background:var(--line)}
+.legend{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.legend canvas{width:120px;height:10px;image-rendering:auto;border-radius:2px}
+</style>
+</head>
+<body>
+<main>
+<h1>神经网络内部到底发生了什么</h1>
+<p class="sub">下面所有图像都是从你训练的模型里实际导出的数据，不是示意图。</p>
+
+<h2>一、运行时：一张图片怎样变成答案</h2>
+<p class="sub">选一张测试图片（训练时模型没见过），看它逐层被变换的结果。颜色越深表示该位置的数值越大，即"这里被激活了"。</p>
+<div class="row" id="pick"></div>
+
+<div class="card" style="margin-top:12px">
+  <h3>① 输入：28×28 = 784 个像素</h3>
+  <p>对网络来说，图片只是 784 个 0–255 的数字。</p>
+  <div class="row" style="gap:24px;align-items:flex-start">
+    <canvas id="inp" width="28" height="28" style="width:168px;height:168px;border-radius:6px"></canvas>
+  </div>
+</div>
+<div class="down">↓ 用 32 个 3×3 卷积核在图上滑动，再取 2×2 最大值缩小一半</div>
+
+<div class="card">
+  <h3>② 第一层卷积：32 张 14×14 特征图</h3>
+  <p>每一格上方的小方块是一个学到的 3×3 卷积核（红为正、蓝为负），下方是它在这张图上的响应。可以看出不同的核分别对横线、竖线、斜线、边缘敏感。</p>
+  <div class="grid" id="c1" style="grid-template-columns:repeat(auto-fill,minmax(64px,1fr))"></div>
+</div>
+<div class="down">↓ 64 个卷积核组合上一层的 32 张图，再缩小一半</div>
+
+<div class="card">
+  <h3>③ 第二层卷积：64 张 7×7 特征图</h3>
+  <p>这一层看的不再是单根笔画，而是笔画的组合（拐角、闭合的圈、交叉）。已经很难用肉眼解释，这正是深层网络的特点。</p>
+  <div class="grid" id="c2" style="grid-template-columns:repeat(auto-fill,minmax(44px,1fr))"></div>
+</div>
+<div class="down">↓ 把 64×7×7 = 3136 个数字拉平，接到 128 个神经元上</div>
+
+<div class="card">
+  <h3>④ 全连接层：128 个神经元</h3>
+  <p>每个方块是一个神经元的输出。不同数字会点亮不同的组合，切换上面的数字对比一下。</p>
+  <canvas id="fc" width="16" height="8" style="width:100%;max-width:480px;aspect-ratio:2/1;border-radius:6px"></canvas>
+</div>
+<div class="down">↓ 128 个数字再变成 10 个分数，经 softmax 变为概率</div>
+
+<div class="card">
+  <h3>⑤ 输出：0–9 各自的概率</h3>
+  <p id="verdict"></p>
+  <div class="bars" id="out"></div>
+</div>
+
+<h2>二、训练时：网络是怎么学会的</h2>
+<p class="sub">为了录下过程，脚本用同样的设置从随机参数开始重新训练了 1 轮（938 步，每步 64 张图），在下面这些时刻拍了快照。拖动滑块或点"播放"。</p>
+<div class="card">
+  <div class="row"><button id="play">▶ 播放</button><input type="range" id="slider" min="0" step="1" style="flex:1"></div>
+  <div class="stat">
+    <div><b id="sStep"></b><span>训练步数</span></div>
+    <div><b id="sSeen"></b><span>已看过的图片</span></div>
+    <div><b id="sAcc"></b><span>测试准确率（2000 张）</span></div>
+    <div><b id="sLoss"></b><span>最近 20 步平均损失</span></div>
+  </div>
+  <h3>损失曲线（每一步，对数刻度）</h3>
+  <p>损失 = 猜错的程度。竖线是当前快照的位置。</p>
+  <canvas id="loss" style="width:100%;height:200px;image-rendering:auto"></canvas>
+</div>
+
+<div class="card">
+  <h3>第一层的 32 个卷积核在变化</h3>
+  <p>一开始是随机噪声；训练中逐渐长成有方向性的"笔画探测器"。</p>
+  <div class="grid" id="tf" style="grid-template-columns:repeat(auto-fill,minmax(40px,1fr));max-width:720px"></div>
+  <div class="legend" style="margin-top:8px">负 <canvas id="lg" width="60" height="1"></canvas> 正</div>
+</div>
+
+<div class="card">
+  <h3>对 10 张样例图的预测</h3>
+  <p>每张图下方是模型的猜测和把握；小柱状图是 0–9 的完整概率分布。</p>
+  <div class="pred" id="tp"></div>
+</div>
+</main>
+
+<script>
+const D = __DATA__;
+const lerp = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+const LO = dark ? [32, 32, 30] : [247, 246, 242], HI = dark ? [120, 180, 245] : [16, 72, 140];
+const NEG = [40, 110, 200], POS = [205, 60, 50], MID = dark ? [60, 60, 56] : [242, 241, 237];
+const seq = v => lerp(LO, HI, v / 255);
+const div = v => v < 0 ? lerp(MID, NEG, -v) : lerp(MID, POS, v);
+
+function paint(cv, vals, w, h, fn) {
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d'), im = ctx.createImageData(w, h);
+  vals.forEach((v, i) => { const c = fn(v); im.data.set([c[0], c[1], c[2], 255], i * 4); });
+  ctx.putImageData(im, 0, 0);
+}
+function mk(w, h, css) { const c = document.createElement('canvas'); c.width = w; c.height = h; c.style.cssText = css; return c; }
+const inkFn = v => [v, v, v];
+
+// ---------- 运行时 ----------
+const pick = document.getElementById('pick');
+D.run.forEach((r, d) => {
+  const b = document.createElement('button');
+  const t = mk(28, 28, 'width:36px;height:36px;border-radius:4px');
+  paint(t, D.imgs[d], 28, 28, inkFn);
+  b.append(t); b.style.padding = '4px'; b.title = '数字 ' + d;
+  b.onclick = () => showRun(d);
+  pick.append(b);
+});
+
+const c1 = document.getElementById('c1'), c2 = document.getElementById('c2');
+const c1Maps = [], c2Maps = [];
+D.finalFilters.forEach((f, i) => {
+  const cell = document.createElement('div'); cell.className = 'cell';
+  const fc = mk(3, 3, 'width:24px;height:24px;border-radius:2px'); paint(fc, f, 3, 3, div);
+  const m = mk(14, 14, 'width:56px;height:56px;border-radius:4px');
+  cell.append(fc, m, document.createTextNode('#' + (i + 1)));
+  c1.append(cell); c1Maps.push(m);
+});
+for (let i = 0; i < 64; i++) {
+  const m = mk(7, 7, 'width:42px;height:42px;border-radius:3px'); m.title = '#' + (i + 1);
+  c2.append(m); c2Maps.push(m);
+}
+
+function showRun(d) {
+  const r = D.run[d];
+  [...pick.children].forEach((b, i) => b.classList.toggle('on', i === d));
+  paint(document.getElementById('inp'), D.imgs[d], 28, 28, inkFn);
+  r.c1.forEach((m, i) => paint(c1Maps[i], m, 14, 14, seq));
+  r.c2.forEach((m, i) => paint(c2Maps[i], m, 7, 7, seq));
+  paint(document.getElementById('fc'), r.fc, 16, 8, seq);
+  const best = r.probs.indexOf(Math.max(...r.probs));
+  document.getElementById('verdict').innerHTML =
+    `正确答案是 <b>${r.label}</b>，模型判断为 <b>${best}</b>（把握 ${(r.probs[best] * 100).toFixed(2)}%）` +
+    (best === r.label ? ' <span class="ok">✓ 正确</span>' : ' <span class="no">✗ 错误</span>');
+  document.getElementById('out').innerHTML = r.probs.map((p, i) =>
+    `<span>${i}</span><div class="bar"><i class="${i === best ? 'top' : ''}" style="width:${Math.max(p * 100, 0.3)}%"></i></div><span>${(p * 100).toFixed(p < 0.001 ? 3 : 1)}%</span>`).join('');
+}
+showRun(0);
+
+// ---------- 训练时 ----------
+const S = D.snaps, slider = document.getElementById('slider');
+slider.max = S.length - 1; slider.value = 0;
+const tf = document.getElementById('tf'), tfC = [];
+for (let i = 0; i < 32; i++) { const c = mk(3, 3, 'width:36px;height:36px;border-radius:3px'); tf.append(c); tfC.push(c); }
+paint(document.getElementById('lg'), Array.from({ length: 60 }, (_, i) => i / 29.5 - 1), 60, 1, div);
+
+const tp = document.getElementById('tp'), tpCells = [];
+D.imgs.forEach((img, d) => {
+  const cell = document.createElement('div'); cell.className = 'cell';
+  const c = mk(28, 28, 'width:56px;height:56px;border-radius:4px'); paint(c, img, 28, 28, inkFn);
+  const txt = document.createElement('div'), mini = document.createElement('div'); mini.className = 'mini';
+  for (let k = 0; k < 10; k++) mini.append(document.createElement('i'));
+  cell.append(c, txt, mini); tp.append(cell); tpCells.push({ txt, mini });
+});
+
+const lossCv = document.getElementById('loss');
+function drawLoss(step) {
+  const r = devicePixelRatio || 1, W = lossCv.clientWidth, H = lossCv.clientHeight;
+  lossCv.width = W * r; lossCv.height = H * r;
+  const ctx = lossCv.getContext('2d'); ctx.scale(r, r);
+  const L = D.losses, pad = { l: 40, r: 8, t: 8, b: 22 };
+  const lo = Math.log10(0.001), hi = Math.log10(3);
+  const X = i => pad.l + (W - pad.l - pad.r) * i / L.length;
+  const Y = v => pad.t + (H - pad.t - pad.b) * (hi - Math.log10(Math.max(v, 0.001))) / (hi - lo);
+  const css = getComputedStyle(document.documentElement);
+  ctx.font = '11px sans-serif'; ctx.fillStyle = css.getPropertyValue('--muted'); ctx.strokeStyle = css.getPropertyValue('--line');
+  [0.001, 0.01, 0.1, 1].forEach(v => { ctx.beginPath(); ctx.moveTo(pad.l, Y(v)); ctx.lineTo(W - pad.r, Y(v)); ctx.stroke(); ctx.fillText(v, 2, Y(v) + 4); });
+  [0, 200, 400, 600, 800].forEach(s => ctx.fillText(s, X(s) - 6, H - 6));
+  ctx.strokeStyle = css.getPropertyValue('--accent'); ctx.globalAlpha = 0.25; ctx.beginPath();
+  L.forEach((v, i) => i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v))); ctx.stroke();
+  ctx.globalAlpha = 1; ctx.lineWidth = 2; ctx.beginPath();
+  const k = 20; let first = true;
+  for (let i = 0; i < L.length; i++) {
+    const w = L.slice(Math.max(0, i - k), i + 1), m = w.reduce((a, b) => a + b, 0) / w.length;
+    first ? ctx.moveTo(X(i), Y(m)) : ctx.lineTo(X(i), Y(m)); first = false;
+  }
+  ctx.stroke();
+  ctx.strokeStyle = css.getPropertyValue('--bad'); ctx.lineWidth = 1.5; ctx.beginPath();
+  ctx.moveTo(X(step), pad.t); ctx.lineTo(X(step), H - pad.b); ctx.stroke();
+}
+
+function showSnap(i) {
+  const s = S[i];
+  document.getElementById('sStep').textContent = s.step;
+  document.getElementById('sSeen').textContent = Math.min(s.step * 64, 60000).toLocaleString();
+  document.getElementById('sAcc').textContent = (s.acc * 100).toFixed(1) + '%';
+  const w = D.losses.slice(Math.max(0, s.step - 20), Math.max(1, s.step));
+  document.getElementById('sLoss').textContent = (w.reduce((a, b) => a + b, 0) / w.length).toFixed(3);
+  s.filters.forEach((f, k) => paint(tfC[k], f, 3, 3, div));
+  s.probs.forEach((p, d) => {
+    const best = p.indexOf(Math.max(...p)), ok = best === d;
+    tpCells[d].txt.innerHTML = `<span class="${ok ? 'ok' : 'no'}">${ok ? '✓' : '✗'} 猜 ${best}</span> ${(p[best] * 100).toFixed(0)}%`;
+    [...tpCells[d].mini.children].forEach((bar, k) => {
+      bar.style.height = Math.max(p[k] * 22, 1) + 'px';
+      bar.style.background = k === best ? (ok ? 'var(--good)' : 'var(--bad)') : 'var(--line)';
+    });
+  });
+  drawLoss(s.step);
+}
+slider.oninput = () => showSnap(+slider.value);
+let timer = null;
+document.getElementById('play').onclick = e => {
+  if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶ 播放'; return; }
+  if (+slider.value === S.length - 1) slider.value = 0;
+  e.target.textContent = '❚❚ 暂停'; showSnap(+slider.value);
+  timer = setInterval(() => {
+    if (+slider.value >= S.length - 1) { clearInterval(timer); timer = null; e.target.textContent = '▶ 播放'; return; }
+    slider.value = +slider.value + 1; showSnap(+slider.value);
+  }, 1000);
+};
+addEventListener('resize', () => showSnap(+slider.value));
+showSnap(0);
+</script>
+</body>
+</html>
