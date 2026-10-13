@@ -7,7 +7,9 @@
 ## 怎么运行
 
 ```bash
-python train.py        # 训练 3 轮，约 2 分钟（CPU），第一次会自动下载数据集python predict.py      # 打开画板，用鼠标写数字，实时识别python visualize.py    # 导出网络内部的真实数据，生成可交互网页 viz.html
+python train.py        # 训练 3 轮，约 2 分钟（CPU），第一次会自动下载数据集
+python predict.py      # 打开画板，用鼠标写数字，实时识别
+python visualize.py    # 导出网络内部的真实数据，生成可交互网页 viz.html
 ```
 
 ## 文件

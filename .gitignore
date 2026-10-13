@@ -12,6 +12,7 @@ hlm_raw.txt
 # 训练出的模型权重：体积大，可以重新训练得到
 *.pt
 *.pth
+checkpoints/
 
 # 运行后自动生成的文件
 viz.html

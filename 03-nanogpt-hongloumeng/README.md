@@ -10,9 +10,11 @@
 ## 怎么运行
 
 ```bash
-# 1. 下载《紅樓夢》原文（古腾堡计划公有领域版本，繁体，约 2.6 MB）curl -L -o hlm_raw.txt https://www.gutenberg.org/cache/epub/24264/pg24264.txt
+# 1. 下载《紅樓夢》原文（古腾堡计划公有领域版本，繁体，约 2.6 MB）
+curl -L -o hlm_raw.txt https://www.gutenberg.org/cache/epub/24264/pg24264.txt
 
-# 2. 预训练：CPU 上用 small 配置约 8 分钟；有 GPU 时自动用 medium 配置python nanogpt.py
+# 2. 预训练：CPU 上用 small 配置约 8 分钟；有 GPU 时自动用 medium 配置
+python nanogpt.py
 
 # 3. 监督微调演示：约 2 分钟，生成对比网页 sft_report.html
 python sft_demo.py
