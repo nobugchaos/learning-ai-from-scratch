@@ -45,7 +45,8 @@ ENV_ID = "HalfCheetah-v5"
 
 def evaluate(policy_fn, obs_norm, episodes=5, seed=10_000, record=False):
     """不加随机探索、按策略最有把握的动作跑完整局（1000 步）。返回平均得分、平均速度和可选的画面。"""
-    env = gym.make(ENV_ID, render_mode="rgb_array" if record else None, width=480, height=270)
+    # 录像用模型自带的 "track" 机位：跟着猎豹平移，否则它几秒就跑出画面
+    env = gym.make(ENV_ID, render_mode="rgb_array", width=480, height=270, camera_name="track") if record else gym.make(ENV_ID)
     scores, speeds, frames = [], [], []
     for ep in range(episodes):
         obs, _ = env.reset(seed=seed + ep)
@@ -53,7 +54,7 @@ def evaluate(policy_fn, obs_norm, episodes=5, seed=10_000, record=False):
         for t in range(1000):
             obs, reward, terminated, truncated, _ = env.step(policy_fn(obs_norm(obs)))
             total += reward
-            if record and ep == 0 and t % 4 == 0:
+            if record and ep == 0 and t % 2 == 0 and t < 160:  # 地板只有 ±40 米，跑快了会出画
                 frames.append(env.render())
             if terminated or truncated:
                 break
@@ -151,7 +152,7 @@ def make_gif(stages):
             draw = ImageDraw.Draw(canvas)
             draw.rectangle((0, 270 * k, 480, 270 * k + 34), fill=(20, 40, 50))
             draw.text((10, 270 * k + 4), title, fill=(255, 255, 255), font=font)
-        gif.append(canvas.resize((360, int(202.5 * len(stages)))))
+        gif.append(canvas.resize((360, int(202.5 * len(stages)))).quantize(48))  # 减少颜色数，压小文件
     gif[0].save(HERE / "cheetah.gif", save_all=True, append_images=gif[1:], duration=80, loop=0, optimize=True)
     print(f"动画已保存到 {HERE / 'cheetah.gif'}")
 
